@@ -12,7 +12,7 @@ est déterminée par l'état de ses voisines, selon les règles suivantes :
 3. Une cellule vivante avec plus de 3 voisins vivants meurt (surpopulation).
 4. Une cellule morte avec exactement 3 voisins vivants devient vivante (reproduction).
 
-Auteur: [Votre Nom]
+Auteur: Sarah MARTIN-ALONSO
 Date: 2024-10-04
 Licence: MIT
 """
