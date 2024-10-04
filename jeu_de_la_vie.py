@@ -4,26 +4,25 @@
 """
 Jeu de la Vie - Automate cellulaire de John Conway
 
-Ce programme simule le célèbre jeu de la vie. Il utilise une grille 2D 
-où chaque cellule peut être vivante ou morte. L'évolution de chaque cellule 
-est déterminée par l'état de ses voisines, selon les règles suivantes :
-1. Une cellule vivante avec moins de 2 voisins vivants meurt (sous-population).
-2. Une cellule vivante avec 2 ou 3 voisins vivants reste en vie.
-3. Une cellule vivante avec plus de 3 voisins vivants meurt (surpopulation).
-4. Une cellule morte avec exactement 3 voisins vivants devient vivante (reproduction).
+Ce programme simule le célèbre jeu de la vie. Il sauvegarde les résultats toutes
+les 50 itérations dans des sous-dossiers nommés "output/i_pattern/j_generation".
+
+Le programme continue à tourner jusqu'à interruption manuelle.
 
 Auteur: Sarah MARTIN-ALONSO
 Date: 2024-10-04
 Licence: MIT
 """
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
-GRID_SIZE = 75
+GRID_SIZE = 50
 ALIVE = 1
 DEAD = 0
+SAVE_INTERVAL = 50  # Sauvegarde toutes les 50 itérations
+OUTPUT_DIR = 'output'
 
 
 def random_grid(size: int) -> np.ndarray:
@@ -78,29 +77,65 @@ def update(grid: np.ndarray) -> np.ndarray:
     return new_grid
 
 
-def animate(data: np.ndarray):
+def find_next_output_directory(base_dir: str) -> str:
     """
-    Fonction d'animation appelée à chaque étape pour mettre à jour la grille.
+    Trouve le prochain dossier 'i_pattern' disponible pour la sauvegarde.
+    Les dossiers sont nommés "01_pattern", "02_pattern", etc.
     
-    :param data: Données transmises à la fonction d'animation
-    :return: Liste contenant l'objet mis à jour pour l'animation
+    :param base_dir: Dossier de base pour la sauvegarde
+    :return: Chemin du prochain dossier disponible
     """
-    global grid
-    grid = update(grid)
-    mat.set_data(grid)
-    return [mat]
+    pattern_number = 1
+    while True:
+        output_path = os.path.join(base_dir, f"{pattern_number:02d}_pattern")
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+            return output_path
+        pattern_number += 1
+
+
+def save_grid(grid: np.ndarray, iteration: int, output_dir: str):
+    """
+    Sauvegarde la grille actuelle sous forme d'image PNG dans le sous-dossier 'j_generation'.
+    
+    :param grid: Grille actuelle
+    :param iteration: Numéro de l'itération
+    :param output_dir: Dossier de sauvegarde
+    """
+    generation_number = (iteration // SAVE_INTERVAL)
+    generation_dir = os.path.join(output_dir, f"{generation_number:02d}_generation")
+    
+    if not os.path.exists(generation_dir):
+        os.makedirs(generation_dir)
+
+    plt.imshow(grid, cmap='binary')
+    plt.title(f"Iteration {iteration}")
+    plt.axis('off')
+    output_file = os.path.join(generation_dir, f"iteration_{iteration:04d}.png")
+    plt.savefig(output_file, bbox_inches='tight')
+    plt.close()
 
 
 if __name__ == "__main__":
     # Initialisation de la grille
     grid = random_grid(GRID_SIZE)
 
-    # Création de la figure pour l'animation
-    fig, ax = plt.subplots()
-    mat = ax.matshow(grid, cmap='binary')
+    # Trouver le prochain dossier 'i_pattern' disponible
+    pattern_dir = find_next_output_directory(OUTPUT_DIR)
 
-    # Animation de la simulation
-    ani = animation.FuncAnimation(fig, animate, interval=200, save_count=50)
-    
-    # Affichage de la grille
-    plt.show()
+    # Compteur d'itérations
+    iteration = 0
+
+    # Simulation infinie jusqu'à arrêt manuel
+    try:
+        while True:
+            grid = update(grid)
+            iteration += 1
+
+            # Sauvegarde toutes les 50 itérations
+            if iteration % SAVE_INTERVAL == 0:
+                save_grid(grid, iteration, pattern_dir)
+                print(f"Pattern sauvegardé à l'itération {iteration} dans {pattern_dir}")
+
+    except KeyboardInterrupt:
+        print("Simulation interrompue par l'utilisateur.")
